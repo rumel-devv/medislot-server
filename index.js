@@ -39,6 +39,12 @@ async function run() {
         res.json(result)
     })
 
+    app.get("/appointments/:userId", async (req , res) => {
+        const {userId} = req.params
+        const result = await appointsCollection.find({userId: (userId)}).toArray()
+        res.send(result)
+    })
+
        app.post("/appointments", async (req, res) => {
       const bookingsData = req.body;
       const result = await appointsCollection.insertOne(bookingsData);
