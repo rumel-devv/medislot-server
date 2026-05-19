@@ -54,8 +54,6 @@ async function run() {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const user = await userCollection.findOne(query);
-      console.log(id);
-
       res.send(user);
     });
 
@@ -65,23 +63,24 @@ async function run() {
       const userMod = req.body;
       const updateDoc = {
         $set: {
-            name: userMod.name,
-      image: userMod.image,
+          name: userMod.name,
+          image: userMod.image,
         },
       };
       const result = await userCollection.updateOne(filter, updateDoc);
       res.send(result);
     });
 
-    // app.patch("/appointments/:id",async (req,res) => {
-    //     const {id} = req.params
-    //     const updatedData = req.body
-    //     const result = await appointsCollection.updateOne(
-    //     { _id: new ObjectId(id) },
-    //     { $set: updatedData },
-    //   );
-    //   res.send(result);
-    // })
+    app.patch("/appointments/:id",async (req,res) => {
+        const {id} = req.params
+        const updatedData = req.body
+        console.log(updatedData);
+        const result = await appointsCollection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: updatedData },
+      );
+      res.send(result);
+    })
 
     app.post("/appointments", async (req, res) => {
       const bookingsData = req.body;
