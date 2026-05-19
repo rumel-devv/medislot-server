@@ -25,7 +25,7 @@ async function run() {
     const appointsCollection = db.collection("appoints");
     const userCollection = db.collection("user");
 
-    app.get("/doctors", async (req, res) => {
+    app.get("/all-doctors", async (req, res) => {
       const result = await doctorsCollection.find().toArray();
       res.json(result);
     });
@@ -93,6 +93,25 @@ async function run() {
     app.post("/appointments", async (req, res) => {
       const bookingsData = req.body;
       const result = await appointsCollection.insertOne(bookingsData);
+      res.json(result);
+    });
+
+    app.get("/search-doctors", async (req, res) => {
+      const search = req.query.search;
+      console.log("🚀 ~ run ~ search:", search)
+      let query = {};
+
+      if (search) {
+        console.log(search);
+        query = {
+          name: {
+            $regex: search,
+            $options: "i",
+          },
+        };
+      }
+      console.log(search);
+      const result = await doctorsCollection.find(query).toArray();
       res.json(result);
     });
 
