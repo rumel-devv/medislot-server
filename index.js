@@ -17,6 +17,26 @@ const client = new MongoClient(uri, {
   },
 });
 
+const verifyToken = (req, res, next) => {
+  const header = req.headers.authorization;
+
+  if (!header) {
+    return res.status(401).send({
+      message: "Unauthorized access",
+    });
+  }
+  const token = header.split(" ")[1];
+    if (!token) {
+    return res.status(401).send({
+      message: "Unauthorized access",
+    });
+  }
+
+  console.log(token);
+
+  next();
+};
+
 async function run() {
   try {
     await client.connect();
@@ -30,7 +50,7 @@ async function run() {
       res.json(result);
     });
 
-    app.get("/doctors/:id", async (req, res) => {
+    app.get("/doctors/:id", verifyToken, async (req, res) => {
       const { id } = req.params;
       const result = await doctorsCollection.findOne({ _id: new ObjectId(id) });
       res.json(result);
@@ -98,7 +118,7 @@ async function run() {
 
     app.get("/search-doctors", async (req, res) => {
       const search = req.query.search;
-      console.log("🚀 ~ run ~ search:", search)
+      console.log("🚀 ~ run ~ search:", search);
       let query = {};
 
       if (search) {
