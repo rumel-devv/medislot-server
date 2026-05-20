@@ -78,7 +78,7 @@ async function run() {
       res.json(result);
     });
 
-    app.get("/users", async (req, res) => {
+    app.get("/users",verifyToken, async (req, res) => {
       const cursor = userCollection.find();
       const result = await cursor.toArray();
       res.send(result);
