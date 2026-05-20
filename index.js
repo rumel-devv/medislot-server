@@ -65,13 +65,13 @@ async function run() {
       res.json(result);
     });
 
-    app.get("/doctors/:id", verifyToken, async (req, res) => {
+    app.get("/doctors/:id",  async (req, res) => {
       const { id } = req.params;
       const result = await doctorsCollection.findOne({ _id: new ObjectId(id) });
       res.json(result);
     });
 
-    app.get("/appointments/:userId", verifyToken, async (req, res) => {
+    app.get("/appointments/:userId",  async (req, res) => {
       const { userId } = req.params;
       const result = await appointsCollection
         .find({ userId: userId })
@@ -79,7 +79,7 @@ async function run() {
       res.send(result);
     });
 
-    app.delete("/appointments/:Id",verifyToken, async (req, res) => {
+    app.delete("/appointments/:Id", async (req, res) => {
       const { Id } = req.params;
       const result = await appointsCollection.deleteOne({
         _id: new ObjectId(Id),
@@ -114,7 +114,7 @@ async function run() {
       res.send(result);
     });
 
-    app.patch("/appointments/:id",verifyToken, async (req, res) => {
+    app.patch("/appointments/:id", async (req, res) => {
       const { id } = req.params;
       const updatedData = req.body;
       console.log(updatedData);
