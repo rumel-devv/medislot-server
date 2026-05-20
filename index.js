@@ -2,6 +2,7 @@ const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const { createRemoteJWKSet, jwtVerify } = require("jose-cjs");
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -17,7 +18,29 @@ const client = new MongoClient(uri, {
   },
 });
 
+const JWKS = createRemoteJWKSet(
+  new URL(`${process.env.CLIENT_URL}/api/auth/jwks`),
+);
 
+const verifyToken = async (req, res, next) => {
+  const header = req?.headers.authorization;
+  console.log(header);
+  if (!header) {
+    return res.status(401).json({ massage: "unauthorized" });
+  }
+  const token = header.split(" ")[1];
+  if (!token) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  try {
+  const { payload } = await jwtVerify(token, JWKS);
+  console.log(payload);
+  next()
+} catch (error) {
+  return res.status(403).json({ massage: "forbviden" });
+}
+
+};
 
 
 async function run() {
@@ -33,13 +56,13 @@ async function run() {
       res.json(result);
     });
 
-    app.get("/doctors/:id",  async (req, res) => {
+    app.get("/doctors/:id", async (req, res) => {
       const { id } = req.params;
       const result = await doctorsCollection.findOne({ _id: new ObjectId(id) });
       res.json(result);
     });
 
-    app.get("/appointments/:userId",  async (req, res) => {
+    app.get("/appointments/:userId",verifyToken, async (req, res) => {
       const { userId } = req.params;
       const result = await appointsCollection
         .find({ userId: userId })
@@ -68,7 +91,7 @@ async function run() {
       res.send(user);
     });
 
-    app.patch("/users/:id", async (req, res) => {
+    app.patch("/users/:id",verifyToken, async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
       const userMod = req.body;
@@ -82,7 +105,7 @@ async function run() {
       res.send(result);
     });
 
-    app.patch("/appointments/:id", async (req, res) => {
+    app.patch("/appointments/:id",verifyToken, async (req, res) => {
       const { id } = req.params;
       const updatedData = req.body;
       console.log(updatedData);
@@ -93,7 +116,7 @@ async function run() {
       res.send(result);
     });
 
-    app.post("/appointments", async (req, res) => {
+    app.post("/appointments", verifyToken, async (req, res) => {
       const bookingsData = req.body;
       const result = await appointsCollection.insertOne(bookingsData);
       res.json(result);
@@ -111,7 +134,7 @@ async function run() {
             $regex: search,
             $options: "i",
           },
-        }
+        };
       }
       console.log(search);
       const result = await doctorsCollection.find(query).toArray();
