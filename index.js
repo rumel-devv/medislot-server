@@ -2,6 +2,7 @@ const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const { createRemoteJWKSet, jwtVerify } = require("jose-cjs");
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -17,7 +18,11 @@ const client = new MongoClient(uri, {
   },
 });
 
-const verifyToken = (req, res, next) => {
+const JWKS = createRemoteJWKSet(
+  new URL(`${process.env.CLIENT_URL}/api/auth/jwks`)
+)
+
+const verifyToken = async (req, res, next) => {
   const header = req.headers.authorization;
 
   if (!header) {
@@ -32,14 +37,24 @@ const verifyToken = (req, res, next) => {
     });
   }
 
-  console.log(token);
+  try {
+    const {payload} = await jwtVerify(token,JWKS)
+    // console.log(payload);
+      next();
+  } catch (error) {
+    return res.status(403).send({
+      message: "Forbidden",
+    });
+  }
 
-  next();
+  // console.log(token);
+
+
 };
 
 async function run() {
   try {
-    await client.connect();
+    // await client.connect();
     const db = client.db("medisolt");
     const doctorsCollection = db.collection("doctors");
     const appointsCollection = db.collection("appoints");
@@ -56,7 +71,7 @@ async function run() {
       res.json(result);
     });
 
-    app.get("/appointments/:userId", async (req, res) => {
+    app.get("/appointments/:userId", verifyToken, async (req, res) => {
       const { userId } = req.params;
       const result = await appointsCollection
         .find({ userId: userId })
@@ -64,7 +79,7 @@ async function run() {
       res.send(result);
     });
 
-    app.delete("/appointments/:Id", async (req, res) => {
+    app.delete("/appointments/:Id",verifyToken, async (req, res) => {
       const { Id } = req.params;
       const result = await appointsCollection.deleteOne({
         _id: new ObjectId(Id),
@@ -99,7 +114,7 @@ async function run() {
       res.send(result);
     });
 
-    app.patch("/appointments/:id", async (req, res) => {
+    app.patch("/appointments/:id",verifyToken, async (req, res) => {
       const { id } = req.params;
       const updatedData = req.body;
       console.log(updatedData);
@@ -110,7 +125,7 @@ async function run() {
       res.send(result);
     });
 
-    app.post("/appointments", async (req, res) => {
+    app.post("/appointments", verifyToken, async (req, res) => {
       const bookingsData = req.body;
       const result = await appointsCollection.insertOne(bookingsData);
       res.json(result);
@@ -128,14 +143,14 @@ async function run() {
             $regex: search,
             $options: "i",
           },
-        };
+        }
       }
       console.log(search);
       const result = await doctorsCollection.find(query).toArray();
       res.json(result);
     });
 
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!",
     );
