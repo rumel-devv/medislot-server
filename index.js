@@ -2,7 +2,6 @@ const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
-const { createRemoteJWKSet, jwtVerify } = require("jose-cjs");
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -18,39 +17,8 @@ const client = new MongoClient(uri, {
   },
 });
 
-const JWKS = createRemoteJWKSet(
-  new URL(`${process.env.CLIENT_URL}/api/auth/jwks`)
-)
-
-const verifyToken = async (req, res, next) => {
-  const header = req.headers.authorization;
-
-  if (!header) {
-    return res.status(401).send({
-      message: "Unauthorized access",
-    });
-  }
-  const token = header.split(" ")[1];
-    if (!token) {
-    return res.status(401).send({
-      message: "Unauthorized access",
-    });
-  }
-
-  try {
-    const {payload} = await jwtVerify(token,JWKS)
-    // console.log(payload);
-      next();
-  } catch (error) {
-    return res.status(403).send({
-      message: "Forbidden",
-    });
-  }
-
-  // console.log(token);
 
 
-};
 
 async function run() {
   try {
@@ -125,7 +93,7 @@ async function run() {
       res.send(result);
     });
 
-    app.post("/appointments", verifyToken, async (req, res) => {
+    app.post("/appointments", async (req, res) => {
       const bookingsData = req.body;
       const result = await appointsCollection.insertOne(bookingsData);
       res.json(result);
